@@ -1,92 +1,118 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-public class ConsoleTextAnalyzer {
-    static int stopWordsPosition;
-    static int capitalLettersArgPosition;
-    static int charactersCounterArgPosition;
+public class ConsoleTextAnalyzer {public static void main(String[] args) throws IOException {
+    ConsoleTextAnalyzer consoleTextAnalyzer = new ConsoleTextAnalyzer();
+    HashMap<String, String> params = consoleTextAnalyzer.convertToKeyValuePair(args);
 
 
-    public static void main(String[] args) throws IOException {
-        for (String str : args) {
-            stopWordsPosition = findIndex(args, "-S") + 1;
-            capitalLettersArgPosition = findIndex(args, "-L");
-            charactersCounterArgPosition = findIndex(args, "-C");
+
+    if (params.containsKey("-F")) {
+        String[] allArgsFiles  = params.get("-F").split(",");
+        String[] allStopWords  = params.get("-S").split(",");
 
 
-        }
-        List<String> stopWords = Arrays.asList(args[findIndex(args, "-S") + 1].split(","));
-        String[] filePathPosition = args[findIndex(args, "-F") + 1].split(",");
-
-
-        for (int i = 0; i < filePathPosition.length; i++) {
-            BufferedReader br = new BufferedReader(new FileReader(filePathPosition[i]));
+        for (int i = 0; i < allArgsFiles.length; i++) {
+            BufferedReader br = new BufferedReader(new FileReader(allArgsFiles[i]));
             String readFileContext;
             String context;
             while ((readFileContext = br.readLine()) != null) {
-                context = readFileContext.replaceAll("\\p{Punct}", "");
+                context = readFileContext.replaceAll("\\p{Punct}", " ").trim();
                 System.out.println(context);
                 List<String> arrFromTextFile = Arrays.asList(context.split(" "));
-                getAnalysisResult(args, arrFromTextFile, stopWords, findCapitalizeWords(context, args));
+
+                consoleTextAnalyzer.getAnalysisResult(params, arrFromTextFile, allStopWords, consoleTextAnalyzer.capitalizeWordFilter(params, context));
             }
             br.close();
         }
-    }
 
-    public static int findIndex(String[] arr, String element) {
-        int index = -1;
-        for (int i = 0; i < arr.length; i++) {
-            if (arr[i].equals(element))
-                index = i;
+    }
+    else {System.out.println("Not correct file arguments");}
+
+
+}
+
+    private HashMap<String, String> convertToKeyValuePair(String[] args) {
+        LinkedHashMap<String, String> params = new LinkedHashMap<>();
+        for (String arg : args) {
+            if (arg.contains("=")) {
+                String[] splitFromEqual = arg.split("=");
+                String key = splitFromEqual[0].substring(0);
+                String value = splitFromEqual[1];
+                params.put(key, value);
+            } else
+                params.put(arg, "");
         }
-        return index;
+        return params;
     }
 
-
-    public static List<String> findCapitalizeWords(String str, String[] args) {
+    private List<String> capitalizeWordFilter(HashMap<String, String> params, String str) {
         List<String> capitalizeWords = new ArrayList<>();
-        for (int i = 0; i < args.length; i++) {
-            if (args[i].equals("-L")) {
-                Pattern pattern = Pattern.compile("[A-Z][a-z]+");
-                Matcher matcher = pattern.matcher(str);
-                while (matcher.find()) {
-                    capitalizeWords.add(matcher.group());
-                }
+
+        if (params.containsKey("-L")) {
+            Pattern pattern = Pattern.compile("[A-Z][a-z]+");
+            Matcher matcher = pattern.matcher(str);
+            while (matcher.find()) {
+                capitalizeWords.add(matcher.group());
             }
         }
+
         return capitalizeWords;
     }
 
-    public static int countCharacters(List<String> arr) {
+
+
+
+    public void getAnalysisResult(HashMap<String, String> params, List<String> arr,String[] allStopWords, List<String> capitalizeWords) {
+
+
+        if (params.size() == 1) {
+            System.out.println("No Flags => " + arr.size() + " Words");
+        }
+        if  (params.size() >= 2) {
+            ConsoleTextAnalyzer consoleTextAnalyzer = new ConsoleTextAnalyzer();
+
+            List<String> stopWords = Arrays.asList(allStopWords);
+            List<String> filteredWords = arr.stream()
+
+                    .filter(k -> !stopWords.contains(k.toLowerCase(Locale.ROOT)))
+                    .filter(k -> capitalizeWords.contains(k))
+                    .collect(Collectors.toList());
+
+            filteredWords.forEach(n-> System.out.print(n+" "));
+            System.out.println();
+            System.out.println(filteredWords.size() + " words");
+
+            if (checkFlagContain(params, "-C")) {
+                System.out.println( consoleTextAnalyzer.countCharacters(filteredWords)+" symbols");
+
+            }
+        }
+
+
+
+
+
+
+
+    }
+
+    private boolean checkFlagContain(HashMap<String, String> params, String flag) {
+
+        return params.containsKey(flag);
+    }
+
+
+    private int countCharacters(List<String> arr) {
         String result = arr.stream()
                 .map(String::valueOf)
                 .collect(Collectors.joining());
         return result.length();
     }
 
-    public static void getAnalysisResult(String[] args, List<String> arr, List<String> stopWords, List<String> capitalizeWords) {
-        if (args.length < 3) {
-            System.out.println("No Flags => " + arr.size() + " Words");
-        } else {
-            List<String> arrFilter = arr.stream()
-                    .filter(k -> !stopWords.contains(k.toLowerCase(Locale.ROOT)))
-                    .filter(k -> !capitalizeWords.contains(k))
-                    .collect(Collectors.toList());
-            System.out.println(arrFilter.size() + " words");
-
-            for (int i = 0; i < args.length; i++) {
-                if (args[i].equals("-C")) {
-                    System.out.println(countCharacters(arrFilter) + " symbols");
-                }
-            }
-        }
-    }
 }
