@@ -1,34 +1,30 @@
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class ConsoleTextAnalyzer {
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         ConsoleTextAnalyzer consoleTextAnalyzer = new ConsoleTextAnalyzer();
         Map<String, String> params = consoleTextAnalyzer.convertToKeyValuePair(args);
+        List<String> stopWords = consoleTextAnalyzer.findStopwords(params);
+        String[] argsF = params.get("-F").split(",");
         if (params.containsKey("-F")) {
-            String[] allArgsFiles = params.get("-F").split(",");
-
-            for (int i = 0; i < allArgsFiles.length; i++) {
-                BufferedReader br = new BufferedReader(new FileReader(allArgsFiles[i]));
-                String readFileContext;
-                String line;
-                while ((readFileContext = br.readLine()) != null) {
-                    line = readFileContext.replaceAll("\\p{Punct}", " ").trim();
-                    System.out.println(line);
-                    List<String> arrFromTextFile = Arrays.asList(line.split(" "));
-
-                    consoleTextAnalyzer.getAnalysisResult(params, arrFromTextFile, consoleTextAnalyzer.getStopwords(params, line));
+            for (int i = 0; i < argsF.length; i++) {
+                String fileText = consoleTextAnalyzer.readfile(argsF[i]);
+                List<String> text = Arrays.asList(fileText.split(" "));
+                try {
+                    consoleTextAnalyzer.getAnalysisResult(params, text, stopWords);
+                } catch (StringIndexOutOfBoundsException e) {
+                    System.out.println("Empty file");
                 }
-                br.close();
+
             }
 
         } else {
-            System.out.println("Not correct file arguments");
+            System.out.println("Correct file arguments not found");
         }
     }
+
     private Map<String, String> convertToKeyValuePair(String[] args) {
         Map<String, String> params = new HashMap<>();
         for (String arg : args) {
@@ -37,11 +33,13 @@ public class ConsoleTextAnalyzer {
                 String key = splitFromEqual[0].substring(0);
                 String value = splitFromEqual[1];
                 params.put(key, value);
-            } else
+            } else {
                 params.put(arg, "");
+            }
         }
         return params;
     }
+
     private void getAnalysisResult(Map<String, String> params, List<String> arr, List<String> allStopWords) {
         List<String> filteredWords = new ArrayList<>();
         if (params.size() == 1) {
@@ -57,7 +55,6 @@ public class ConsoleTextAnalyzer {
                 }
                 arr = filteredWords;
             }
-
             if (params.containsKey("-S")) {
                 filteredWords = arr.stream()
                         .map(String::toLowerCase)
@@ -67,28 +64,51 @@ public class ConsoleTextAnalyzer {
             }
 
         }
-
-
+        System.out.println(arr);
         System.out.println(arr.size() + " words");
-        //System.out.println(arr);
+
         if (params.containsKey("-C")) {
             System.out.println(countCharacters(arr) + " symbols");
         }
-
     }
 
     private int countCharacters(List<String> arr) {
-        String result = arr.stream()
-                .map(String::valueOf)
-                .collect(Collectors.joining());
-        return result.length();
+        String str = String.join("", arr);
+        return str.length();
     }
 
-    private List<String> getStopwords(Map<String, String> params, String line) {
+    private List<String> findStopwords(Map<String, String> params) {
         List<String> allStopWords = new ArrayList<>();
         if (params.containsKey("-S")) {
             allStopWords = Arrays.asList(params.get("-S").split(","));
         }
         return allStopWords;
     }
+
+
+    private String readfile(String fileName) {
+        String line = null;
+        try (Reader reader = new InputStreamReader(new FileInputStream(fileName))) {
+            int a = reader.read();
+            StringBuilder result = new StringBuilder();
+            while (a > 0) {
+                result.append((char) a);
+                a = reader.read();
+
+
+            }
+            String str = result.toString();
+            line = str.replaceAll("[^\\p{L}]+", " ");
+            System.out.println(line);
+        } catch (FileNotFoundException e) {
+
+            System.out.println("File Not Found");
+        } catch (IOException e) {
+            System.out.println("Wrong arguments");
+        }
+
+        return line;
+    }
+
+
 }
