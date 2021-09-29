@@ -1,8 +1,7 @@
 # ConsoleTextAnalyzer
 
-Create console text analyzer tool which produces a set of statistics data about the file contents.
-Please design the application, having in mind that its components might be re-used in future.
-The tool must calculate and print for each file:
+This is text analyzer tool which produces a set of statistics data about the file contents.
+The tool can calculate and print for each file:
 1.	number of words in the file, restricted by:
 a.	stopwords - if passed to the application, those words will not be counted. For example we need to exclude English articles (a, the) and preposition words (at, on etc.) or any other words
 b.	capital letter - if flag -L is passed to the application only words starting with capital letter should be counted
